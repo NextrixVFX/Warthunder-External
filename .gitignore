@@ -1,5 +1,22 @@
 # Prerequisites
 *.d
+*.pdb
+*.tlog
+*.vsidx
+*.suo
+*.db
+*.bin
+*.log
+*.recipe
+*.json
+*.ipch
+*.tmh
+
+# drivers
+*.sys
+*.inf
+*.cer
+*.cat
 
 # Compiled Object files
 *.slo
