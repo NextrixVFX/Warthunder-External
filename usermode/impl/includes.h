@@ -117,8 +117,8 @@ using namespace External::Primitives;
 using namespace External::Math;
 
 // Memory
-//#define is_usermode_mem
-#include <impl/memory/kernelmode/include.hxx>
+#define is_usermode_mem
+//#include <impl/memory/kernelmode/include.hxx>
 #include <impl/memory/usermode/include.hxx>
 #include <impl/memory/memory.hxx>
 
