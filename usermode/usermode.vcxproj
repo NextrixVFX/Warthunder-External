@@ -338,6 +338,12 @@
     <Library Include="lib\DirectXTK\DirectXTK.lib" />
     <Library Include="lib\freetype\freetype.lib" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="assets\offsets.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Font Include="assets\Poppins.ttf" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

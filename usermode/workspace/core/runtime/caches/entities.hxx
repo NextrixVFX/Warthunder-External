@@ -35,6 +35,8 @@ namespace External::Runtime
 
 		void tick() override
 		{
+			sleep_short(1);
+
 			entities_frame_t frame{};
 
 			c_engine_cache::get(m_engine_cache);
@@ -61,10 +63,13 @@ namespace External::Runtime
 					if (!g_memory.is_valid_address(player_info))
 						continue;
 
+					// data / stats
 					ent.m_username = Engine::SDK::read_player_name(player_info);
 					ent.m_team_num = g_memory.read<int8_t>(ent.m_base + offsets::unit::m_team_num);
 					ent.m_unit_state = g_memory.read<int8_t>(ent.m_base + offsets::unit::m_unit_state);
 					ent.m_unit_type = g_memory.read<int8_t>(ent.m_base + offsets::unit::m_unit_type);
+					
+					// location / rotation
 					ent.m_position = g_memory.read<vector3_t<float>>(ent.m_base + offsets::unit::m_position);
 					ent.m_rotation_matrix = g_memory.read<matrix3x3_t<float>>(ent.m_base + offsets::unit::m_rotation_matrix);
 					ent.m_bbox.m_min = g_memory.read<vector3_t<float>>(ent.m_base + offsets::unit::m_bb_min);
@@ -89,7 +94,6 @@ namespace External::Runtime
 			}
 
 			m_data.update(frame);
-			sleep_short(1);
 		}
 
 		template<typename T = c_entities_cache*>

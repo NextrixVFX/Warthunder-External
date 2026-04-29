@@ -3,51 +3,82 @@
 namespace offsets
 {
     // https://dash.monkrel.cc/api/v1/offsets
-    // version: 2.55.1.49
+    // version: 2.55.1.80
+
+    inline std::unordered_map<std::string, uintptr_t> values{};
+
+    bool load(const std::string& path)
+    {
+        std::ifstream file(path);
+        if (!file.is_open())
+            return false;
+
+        std::string line;
+        while (std::getline(file, line))
+        {
+            if (line.empty())
+                continue;
+
+            if (line.starts_with("--"))
+                continue;
+
+            std::istringstream iss(line);
+            std::string name;
+            uintptr_t value;
+
+            if (!(iss >> name >> std::hex >> value))
+                continue;
+
+            External::Logger::print(encrypt("Offset: %s: 0x%llX"), name.c_str(), value);
+            values[name] = value;
+        }
+
+        return true;
+    }
+
+    uintptr_t get(const std::string& name)
+    {
+        auto it = values.find(name);
+        if (it == values.end())
+            return 0;
+
+        return it->second;
+    }
 
     namespace global
     {
-        uintptr_t g_game_context = 0x6CB2F68; // uintptr_t<game*>
-        uintptr_t g_local_player = 0x6C8F758; // uintptr_t<player*>
+        inline uintptr_t& g_game_context = values["global.g_game_context"];
+        inline uintptr_t& g_local_player = values["global.g_local_player"];
     }
 
     namespace game
     {
-        /*
-        uintptr_t g_unit_list_1 = 0x310; // uintptr_t
-        uintptr_t g_unit_count_1 = 0x320; // uint16_t
-
-        uintptr_t g_unit_list_2 = 0x328; // uintptr_t
-        uintptr_t g_unit_count_2 = 0x338; // uint16_t
-        */
-
-        uintptr_t g_unit_list_3 = 0x340; // uintptr_t
-        uintptr_t g_unit_count_3 = 0x350; // uint16_t
-
-        uintptr_t g_camera_controller = 0x670; // uintptr_t<camera*>
+        inline uintptr_t& g_unit_list_3 = values["game.g_unit_list_3"];
+        inline uintptr_t& g_unit_count_3 = values["game.g_unit_count_3"];
+        inline uintptr_t& g_camera_controller = values["game.g_camera_controller"];
     }
 
     namespace camera
     {
-        uintptr_t g_position = 0x58; // vector3<?>
-        uintptr_t g_view_matrix = 0x1D0; // matrix4x4<?>
+        inline uintptr_t& g_position = values["camera.g_position"];
+        inline uintptr_t& g_view_matrix = values["camera.g_view_matrix"];
     }
 
     namespace player
     {
-        uintptr_t m_name = 0x60; // uintptr_t
-        //uintptr_t m_owned_unit = 0x8E8; // uintptr_t<unit*>
+        inline uintptr_t& m_name = values["player.m_name"];
     }
 
     namespace unit
     {
-        uintptr_t m_unit_type = 0x8C;
-        uintptr_t m_bb_min = 0x240;
-        uintptr_t m_bb_max = m_bb_min + 0xC;
-        uintptr_t m_rotation_matrix = 0xCE4;
-        uintptr_t m_position = 0xD08;
-        uintptr_t m_player_info = 0xF68;
-        uintptr_t m_team_num = 0xFE0;
-        uintptr_t m_unit_state = 0xF60;
+        inline uintptr_t& m_unit_type = values["unit.m_unit_type"];
+        inline uintptr_t& m_bb_min = values["unit.m_bb_min"];
+        inline uintptr_t& m_bb_max = values["unit.m_bb_max"];
+        inline uintptr_t& m_rotation_matrix = values["unit.m_rotation_matrix"];
+        inline uintptr_t& m_position = values["unit.m_position"];
+        inline uintptr_t& m_team_num = values["unit.m_team_num"];
+        inline uintptr_t& m_unit_state = values["unit.m_unit_state"];
+        inline uintptr_t& m_player_info = values["unit.m_player_info"];
     }
+    
 }

@@ -36,6 +36,9 @@ namespace External::Features::Visual
 			{
 				ImColor entity_color = Config::g_tank_color;
 				
+				if (entity.m_base == global::g_local.m_local_player.m_unit_ptr)
+					continue;
+
 				if (entity.m_unit_state == Engine::SDK::e_unit_state::m_dead)
 					continue;
 
