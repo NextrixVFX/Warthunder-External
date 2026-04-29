@@ -1,7 +1,5 @@
 #pragma once
 
-
-
 namespace global
 {
 	struct local_player_t

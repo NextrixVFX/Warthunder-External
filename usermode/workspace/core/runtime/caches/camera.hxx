@@ -20,6 +20,8 @@ namespace External::Runtime
 
 		void tick() override
 		{
+			sleep_short(1);
+
 			camera_frame_t frame{};
 			uintptr_t base_address = g_memory.m_application.m_base_address;
 
@@ -27,7 +29,6 @@ namespace External::Runtime
 			auto& engine_data = m_engine_cache->m_data.get();
 			if (!g_memory.is_valid_address(engine_data.m_camera_controller))
 			{
-				Logger::print(encrypt("Invalid m_camera_controller!"));
 				return;
 			}
 
@@ -38,7 +39,6 @@ namespace External::Runtime
 			
 			frame.m_camera_data = camera;
 			m_data.update(frame);
-			sleep_short(1);
 		}
 
 		template<typename T = c_camera_cache*>

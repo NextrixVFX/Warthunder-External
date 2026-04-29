@@ -91,12 +91,21 @@ namespace External::Render
 		}
 
 	public:
-		static bool create_window_binding(const std::string& window_name)
+		static bool create_window_binding(const std::string& window_name_1, const std::string& window_name_2)
 		{
-			m_game_window = ::FindWindowA(NULL, window_name.c_str());
+			m_game_window = ::FindWindowA(nullptr, window_name_1.c_str());
+
+			if (!m_game_window)
+				m_game_window = ::FindWindowA(nullptr, window_name_2.c_str());
+
 			if (!m_game_window)
 			{
-				Logger::print(encrypt("Failed to find game window:\t%s"), window_name.c_str());
+				Logger::print(
+					encrypt("Failed to find game window:\t%s / %s"),
+					window_name_1.c_str(),
+					window_name_2.c_str()
+				);
+
 				return false;
 			}
 

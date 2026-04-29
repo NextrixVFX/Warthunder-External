@@ -1,0 +1,23 @@
+-- site: https://dash.monkrel.cc/api/v1/offsets
+-- version: 2.55.1.80
+
+global.g_game_context 6CF6948
+global.g_local_player 6CD2BA8
+
+game.g_unit_list_3 340
+game.g_unit_count_3 350
+game.g_camera_controller 670
+
+camera.g_position 58
+camera.g_view_matrix 1D0
+
+player.m_name 60
+
+unit.m_unit_type 8C
+unit.m_bb_min 240
+unit.m_bb_max 24C
+unit.m_rotation_matrix CE4
+unit.m_position D08
+unit.m_team_num FE0
+unit.m_unit_state F60
+unit.m_player_info F68

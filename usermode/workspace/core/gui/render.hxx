@@ -38,7 +38,7 @@ namespace External::Render
     private:
         inline static ImFont* addFont(ImGuiIO& io, float size)
         {
-            return io.Fonts->AddFontFromFileTTF(encrypt("C:\\Windows\\Fonts\\Arial.ttf"), size);
+            return io.Fonts->AddFontFromFileTTF(encrypt("assets\\Poppins.ttf"), size);
         }
 
         static inline bool create_device()
@@ -175,14 +175,17 @@ namespace External::Render
         }
 
     public:
-        static void start_rendering(const std::string& window_name)
+        static void start_rendering(const std::string& window_name_1, const std::string& window_name_2)
         {
             ImGui_ImplWin32_EnableDpiAwareness();
 
             RECT m_rect_cache{ 0 , 0 , 0 , 0 };
             MSG  m_msg{ 0 };
 
-            c_window::m_game_window = ::FindWindowA(NULL, window_name.c_str());
+            c_window::m_game_window = ::FindWindowA(NULL, window_name_1.c_str());
+
+            if (!c_window::m_game_window)
+                c_window::m_game_window = ::FindWindowA(NULL, window_name_2.c_str());
 
             while (true)
             {
@@ -273,16 +276,16 @@ namespace External::Render
         }
 
         // note: creates a thread
-        static void initialize(const std::string& window_name)
+        static void initialize(const std::string& window_name_1, const std::string& window_name_2)
         {
             std::thread([&] { 
-				if (!c_window::create_window_binding(window_name))
+				if (!c_window::create_window_binding(window_name_1, window_name_2))
                 	return;
 				
 				if (!create_device())
                 	return;
 				
-				start_rendering(window_name);
+				start_rendering(window_name_1, window_name_2);
 			}).detach();
         }
 	};

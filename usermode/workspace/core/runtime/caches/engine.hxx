@@ -15,8 +15,8 @@ namespace External::Runtime
 		uintptr_t m_game_context = 0;
 		uintptr_t m_local_player = 0;
 		uintptr_t m_camera_controller = 0;
-		unit_list_t m_unit_list_1{};
-		unit_list_t m_unit_list_2{};
+		//unit_list_t m_unit_list_1{};
+		//unit_list_t m_unit_list_2{};
 		unit_list_t m_unit_list_3{};
 		Engine::Structs::camera_t m_camera_data{};
 	};
@@ -32,36 +32,32 @@ namespace External::Runtime
 
 		void tick() override
 		{
+			sleep_short(4);
+
 			s_engine_frame frame{};
 			uintptr_t base_address = g_memory.m_application.m_base_address;
 			
 			frame.m_game_context = g_memory.read<uintptr_t>(base_address + offsets::global::g_game_context);
 			if (!g_memory.is_valid_address(frame.m_game_context))
 			{
-				//Logger::print(encrypt("Invalid m_game_context!"));
 				return;
 			}
 			
 			frame.m_local_player = g_memory.read<uintptr_t>(base_address + offsets::global::g_local_player);
 			if (!g_memory.is_valid_address(frame.m_local_player))
 			{
-				//Logger::print(encrypt("Invalid m_local_player!"));
 				return;
 			}
 
 			frame.m_camera_controller = g_memory.read<uintptr_t>(frame.m_game_context + offsets::game::g_camera_controller);
 			if (!g_memory.is_valid_address(frame.m_camera_controller))
 			{
-				//Logger::print(encrypt("Invalid m_camera_controller!"));
 				return;
 			}
 
-			//frame.m_unit_list_1 = g_memory.read<unit_list_t>(frame.m_game_context + offsets::game::g_unit_list_1);
-			//frame.m_unit_list_2 = g_memory.read<unit_list_t>(frame.m_game_context + offsets::game::g_unit_list_2);
 			frame.m_unit_list_3 = g_memory.read<unit_list_t>(frame.m_game_context + offsets::game::g_unit_list_3);
 			
 			m_data.update(frame);
-			sleep_short(1);
 		}
 
 		template<typename T = c_engine_cache*>
