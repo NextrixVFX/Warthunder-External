@@ -21,6 +21,16 @@ namespace External::Features
 
 		~c_feature() = default;
 
+		void set_state(bool state)
+		{
+			m_enabled = state;
+		}
+
+		bool is_enabled() const
+		{
+			return m_enabled;
+		}
+
 		virtual void on_render() = 0;
 		virtual void on_update() = 0;
 	};
@@ -35,10 +45,22 @@ namespace External::Features
 		return nullptr;
 	}
 
-	inline void set_enabled(FEATURE_ID id, bool enabled)
+	inline void set_feature_state(FEATURE_ID id, bool state)
 	{
 		if (auto* f = get_feature(id))
-			f->m_enabled = enabled;
+			f->set_state(state);
+	}
+
+	inline void set_all_features_state(bool state)
+	{
+		for (auto& f : feature_array)
+			f->set_state(state);
+	}
+
+	inline void stop_features()
+	{
+		set_all_features_state(false);
+		Logger::print(encrypt("[c_features] stop_features: Stopped all features."));
 	}
 
 	inline std::vector<std::function<std::unique_ptr<c_feature>()>> feature_registry;

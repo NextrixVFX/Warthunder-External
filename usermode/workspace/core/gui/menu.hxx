@@ -5,163 +5,164 @@ namespace External::Render
 	class c_menu
 	{
     public:
-        inline static HHOOK m_mouse_hook = nullptr;
-        inline static bool m_mouse_hooked = false;
         static inline bool menu_active = true;
+        inline static float menu_alpha = 1.0f;
 
     private:
         inline static int s_lastCategory = 0;
         inline static float s_fadeAnim = 1.0f;
-
-        inline static const char* _distMethods[] = { "Screen Distance", "World Distance" };
-        inline static const char* _bones[] = { "Head", "Neck", "Chest", "Torso" };
-        inline static const char* _chamsColors[] = { "Red", "Blue", "Yellow", "White" };
-        inline static const char* _lowestRarity[] = { "Common", "Uncommon", "Rare", "Epic", "Legendary" };
-        inline static const char* _boxTypes[] = { "Filled", "Corner", "Regular" };
-
+        inline static float s_pageSlideDir = 1.0f;
+        inline static const char* _boxTypes[] = { "Regular", "Filled", "Corner", "Corner-Filled", "Three-Dimensional" };
         inline static bool menu_setup = false;
 
-        static LRESULT CALLBACK mouse_hook(int nCode, WPARAM wParam, LPARAM lParam) 
+        static float ease_out_cubic(float t)
         {
-            if (nCode >= 0) {
-                if (wParam == WM_MOUSEWHEEL) {
-                    MSLLHOOKSTRUCT* p = (MSLLHOOKSTRUCT*)lParam;
-                    int delta = GET_WHEEL_DELTA_WPARAM(p->mouseData);
-                    ImGui::GetIO().AddMouseWheelEvent(0, (float)delta / WHEEL_DELTA);
-                }
-            }
-
-            return CallNextHookEx(m_mouse_hook, nCode, wParam, lParam);
+            t = ImClamp(t, 0.0f, 1.0f);
+            const float inv = 1.0f - t;
+            return 1.0f - inv * inv * inv;
         }
 
+        static void draw_active_panel(int category, float eased_alpha, float slide_x, float slide_y)
+        {
+            ImGui::PushStyleVar(ImGuiStyleVar_Alpha, eased_alpha * ImGui::GetStyle().Alpha);
+
+            const ImVec2 panel_pos = ImGui::GetCursorScreenPos();
+            ImGui::SetCursorScreenPos(ImVec2(panel_pos.x + slide_x, panel_pos.y + slide_y));
+            ImGui::Dummy(ImVec2(0.0f, 0.0f));
+
+            switch (category)
+            {
+                case 0: DrawVisualsPanel(); break;
+                case 1: DrawSettingsPanel(); break;
+                default: DrawVisualsPanel(); break;
+            }
+
+            ImGui::PopStyleVar();
+        }
+
+    public:
         static void update_visibility()
         {
-            if (!c_window::m_window)
+            if (!g_window.m_window)
                 return;
 
-            LONG_PTR ex = GetWindowLongPtr(c_window::m_window, GWL_EXSTYLE);
+            LONG_PTR ex = GetWindowLongPtr(g_window.m_window, GWL_EXSTYLE);
 
             if (ImGui::GetIO().WantCaptureMouse)
             {
-                if (!m_mouse_hooked)
-                {
-                    m_mouse_hook = SetWindowsHookEx(WH_MOUSE_LL, mouse_hook, GetModuleHandle(nullptr), 0);
-                    m_mouse_hooked = true;
-                }
-
                 ex &= ~WS_EX_TRANSPARENT;
             }
             else
             {
-                if (m_mouse_hooked)
-                {
-                    UnhookWindowsHookEx(m_mouse_hook);
-                    m_mouse_hooked = false;
-                }
-
                 ex |= WS_EX_TRANSPARENT;
             }
 
-            SetWindowLongPtr(c_window::m_window, GWL_EXSTYLE, ex);
+            SetWindowLongPtr(g_window.m_window, GWL_EXSTYLE, ex);
         }
 
-    public:
         static void setup_menu()
         {
-            if (menu_setup)
-                return;
-
             ImGuiStyle& style = ImGui::GetStyle();
+            
+            auto mul = [](ImVec4 c, float v)
+            {
+                return ImVec4(
+                    c.x * v,
+                    c.y * v,
+                    c.z * v,
+                    c.w
+                );
+            };
 
-            // Rounding
-            style.WindowRounding = 6.0f;
-            style.FrameRounding = 4.0f;
-            style.GrabRounding = 4.0f;
-            style.ScrollbarRounding = 4.0f;
-            style.TabRounding = 4.0f;
-            style.ChildRounding = 4.0f;
+            const ImVec4 accent = g_styling.accent();
 
-            // Spacing & Padding
-            style.WindowPadding = ImVec2(8.0f, 8.0f);
-            style.FramePadding = ImVec2(6.0f, 4.0f);
-            style.ItemSpacing = ImVec2(8.0f, 6.0f);
-            style.ItemInnerSpacing = ImVec2(8.0f, 4.0f);
-            style.IndentSpacing = 20.0f;
-            style.ScrollbarSize = 12.0f;
-            style.GrabMinSize = 8.0f;
+            style.WindowRounding = g_styling.menu_rounding();
+            style.FrameRounding = g_styling.elements_rounding();
+            style.GrabRounding = g_styling.elements_rounding();
+            style.ScrollbarRounding = g_styling.elements_rounding();
+            style.TabRounding = g_styling.elements_rounding();
+            style.ChildRounding = g_styling.child_rounding();
 
-            // Borders
+            style.WindowPadding = g_styling.apply_scale(8.0f, 8.0f);
+            style.FramePadding = g_styling.apply_scale(6.0f, 4.0f);
+            style.ItemSpacing = g_styling.apply_scale(8.0f, 6.0f);
+            style.ItemInnerSpacing = g_styling.apply_scale(8.0f, 4.0f);
+            style.IndentSpacing = g_styling.apply_scale(20.0f);
+            style.ScrollbarSize = g_styling.apply_scale(12.0f);
+            style.GrabMinSize = g_styling.apply_scale(8.0f);
+
             style.WindowBorderSize = 1.0f;
             style.ChildBorderSize = 1.0f;
             style.FrameBorderSize = 0.0f;
 
-            // Column spacing
-            style.ColumnsMinSpacing = 12.0f;
+            style.ColumnsMinSpacing = g_styling.apply_scale(12.0f);
 
             ImVec4* colors = style.Colors;
 
-            // Window
-            colors[ImGuiCol_WindowBg] = ImVec4(0.07f, 0.07f, 0.10f, 1.00f);
-            colors[ImGuiCol_ChildBg] = ImVec4(0.09f, 0.09f, 0.13f, 1.00f);
-            colors[ImGuiCol_Border] = ImVec4(0.15f, 0.15f, 0.20f, 1.00f);
-            colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
+            // backgrounds
+            colors[ImGuiCol_WindowBg] = mul(accent, 0.08f);
+            colors[ImGuiCol_ChildBg] = mul(accent, 0.10f);
+            colors[ImGuiCol_PopupBg] = mul(accent, 0.12f);
 
-            // Title
-            colors[ImGuiCol_TitleBg] = ImVec4(0.05f, 0.05f, 0.08f, 1.00f);
-            colors[ImGuiCol_TitleBgActive] = ImVec4(0.08f, 0.08f, 0.12f, 1.00f);
-            colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.05f, 0.05f, 0.08f, 0.75f);
+            // borders
+            colors[ImGuiCol_Border] = mul(accent, 0.22f);
 
-            // Text
-            colors[ImGuiCol_Text] = ImVec4(0.90f, 0.90f, 0.93f, 1.00f);
-            colors[ImGuiCol_TextDisabled] = ImVec4(0.45f, 0.45f, 0.50f, 1.00f);
-            colors[ImGuiCol_TextSelectedBg] = ImVec4(0.30f, 0.55f, 0.95f, 0.35f);
+            // frames
+            colors[ImGuiCol_FrameBg] = mul(accent, 0.18f);
+            colors[ImGuiCol_FrameBgHovered] = mul(accent, 0.28f);
+            colors[ImGuiCol_FrameBgActive] = mul(accent, 0.40f);
 
-            // Frame (inputs, etc.)
-            colors[ImGuiCol_FrameBg] = ImVec4(0.13f, 0.13f, 0.18f, 1.00f);
-            colors[ImGuiCol_FrameBgHovered] = ImVec4(0.17f, 0.17f, 0.24f, 1.00f);
-            colors[ImGuiCol_FrameBgActive] = ImVec4(0.20f, 0.20f, 0.28f, 1.00f);
+            // buttons
+            colors[ImGuiCol_Button] = mul(accent, 0.22f);
+            colors[ImGuiCol_ButtonHovered] = mul(accent, 0.38f);
+            colors[ImGuiCol_ButtonActive] = mul(accent, 0.55f);
 
-            // Checkmark & Sliders
-            colors[ImGuiCol_CheckMark] = ImVec4(0.35f, 0.60f, 1.00f, 1.00f);
-            colors[ImGuiCol_SliderGrab] = ImVec4(0.35f, 0.60f, 1.00f, 1.00f);
-            colors[ImGuiCol_SliderGrabActive] = ImVec4(0.45f, 0.70f, 1.00f, 1.00f);
+            // headers
+            colors[ImGuiCol_Header] = mul(accent, 0.24f);
+            colors[ImGuiCol_HeaderHovered] = mul(accent, 0.38f);
+            colors[ImGuiCol_HeaderActive] = mul(accent, 0.50f);
 
-            // Buttons
-            colors[ImGuiCol_Button] = ImVec4(0.18f, 0.18f, 0.26f, 1.00f);
-            colors[ImGuiCol_ButtonHovered] = ImVec4(0.25f, 0.25f, 0.35f, 1.00f);
-            colors[ImGuiCol_ButtonActive] = ImVec4(0.30f, 0.30f, 0.42f, 1.00f);
+            // tabs
+            colors[ImGuiCol_Tab] = mul(accent, 0.16f);
+            colors[ImGuiCol_TabHovered] = mul(accent, 0.34f);
+            colors[ImGuiCol_TabActive] = mul(accent, 0.45f);
 
-            // Headers (collapsing headers, selectables)
-            colors[ImGuiCol_Header] = ImVec4(0.18f, 0.18f, 0.26f, 1.00f);
-            colors[ImGuiCol_HeaderHovered] = ImVec4(0.25f, 0.25f, 0.35f, 1.00f);
-            colors[ImGuiCol_HeaderActive] = ImVec4(0.30f, 0.30f, 0.42f, 1.00f);
+            // title bars
+            colors[ImGuiCol_TitleBg] = mul(accent, 0.12f);
+            colors[ImGuiCol_TitleBgActive] = mul(accent, 0.20f);
 
-            // Separators
-            colors[ImGuiCol_Separator] = ImVec4(0.15f, 0.15f, 0.20f, 1.00f);
-            colors[ImGuiCol_SeparatorHovered] = ImVec4(0.25f, 0.25f, 0.35f, 1.00f);
-            colors[ImGuiCol_SeparatorActive] = ImVec4(0.35f, 0.60f, 1.00f, 1.00f);
+            // scrollbar
+            colors[ImGuiCol_ScrollbarBg] = mul(accent, 0.10f);
+            colors[ImGuiCol_ScrollbarGrab] = mul(accent, 0.26f);
+            colors[ImGuiCol_ScrollbarGrabHovered] = mul(accent, 0.38f);
+            colors[ImGuiCol_ScrollbarGrabActive] = mul(accent, 0.50f);
 
-            // Tabs
-            colors[ImGuiCol_Tab] = ImVec4(0.11f, 0.11f, 0.16f, 1.00f);
-            colors[ImGuiCol_TabHovered] = ImVec4(0.25f, 0.25f, 0.35f, 1.00f);
-            colors[ImGuiCol_TabActive] = ImVec4(0.18f, 0.18f, 0.26f, 1.00f);
-            colors[ImGuiCol_TabUnfocused] = ImVec4(0.09f, 0.09f, 0.13f, 1.00f);
-            colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.14f, 0.14f, 0.20f, 1.00f);
+            // separators
+            colors[ImGuiCol_Separator] = mul(accent, 0.24f);
+            colors[ImGuiCol_SeparatorHovered] = mul(accent, 0.40f);
+            colors[ImGuiCol_SeparatorActive] = mul(accent, 0.55f);
 
-            // Scrollbar
-            colors[ImGuiCol_ScrollbarBg] = ImVec4(0.06f, 0.06f, 0.09f, 1.00f);
-            colors[ImGuiCol_ScrollbarGrab] = ImVec4(0.18f, 0.18f, 0.26f, 1.00f);
-            colors[ImGuiCol_ScrollbarGrabHovered] = ImVec4(0.25f, 0.25f, 0.35f, 1.00f);
-            colors[ImGuiCol_ScrollbarGrabActive] = ImVec4(0.30f, 0.30f, 0.42f, 1.00f);
+            // resize grip
+            colors[ImGuiCol_ResizeGrip] = mul(accent, 0.30f);
+            colors[ImGuiCol_ResizeGripHovered] = mul(accent, 0.45f);
+            colors[ImGuiCol_ResizeGripActive] = mul(accent, 0.60f);
 
-            // Resize grip
-            colors[ImGuiCol_ResizeGrip] = ImVec4(0.18f, 0.18f, 0.26f, 0.50f);
-            colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.25f, 0.25f, 0.35f, 0.75f);
-            colors[ImGuiCol_ResizeGripActive] = ImVec4(0.35f, 0.60f, 1.00f, 1.00f);
+            // checkmarks/sliders
+            colors[ImGuiCol_CheckMark] = mul(accent, 1.00f);
+            colors[ImGuiCol_SliderGrab] = mul(accent, 0.80f);
+            colors[ImGuiCol_SliderGrabActive] = mul(accent, 1.00f);
 
-            // Popup/Modal
-            colors[ImGuiCol_PopupBg] = ImVec4(0.09f, 0.09f, 0.13f, 0.95f);
-            colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.60f);
+            // selected text
+            colors[ImGuiCol_TextSelectedBg] = ImVec4(
+                accent.x,
+                accent.y,
+                accent.z,
+                0.35f
+            );
+
+            colors[ImGuiCol_Text] = ImVec4(0.92f, 0.92f, 0.95f, 1.00f);
+            colors[ImGuiCol_TextDisabled] = ImVec4(0.55f, 0.55f, 0.60f, 1.00f);
+
             menu_setup = true;
         }
 
@@ -169,8 +170,27 @@ namespace External::Render
         {
             setup_menu();
 
-            ImGui::SetNextWindowSize(ImVec2(612, 320), ImGuiCond_Always);
-            ImGui::Begin(encrypt("sonar v0.0.1 - private"), nullptr);
+            static float s_last_menu_scale = 0.f;
+            const float scale = g_styling.get_scale();
+            const ImVec2 default_size = g_styling.menu_size();
+            const ImVec2 min_size = g_styling.menu_min_size();
+
+            ImGui::SetNextWindowSizeConstraints(min_size, ImVec2(FLT_MAX, FLT_MAX));
+            if (std::fabs(scale - s_last_menu_scale) > 0.02f)
+            {
+                ImGui::SetNextWindowSize(default_size);
+                s_last_menu_scale = scale;
+            }
+            else
+            {
+                ImGui::SetNextWindowSize(default_size, ImGuiCond_FirstUseEver);
+            }
+
+            ImGui::Begin(
+                encrypt("##main_panel"),
+                nullptr,
+                ImGuiWindowFlags_NoTitleBar
+            );
 
             ImVec2 window_pos = ImGui::GetWindowPos();
             ImVec2 window_size = ImGui::GetWindowSize();
@@ -179,7 +199,19 @@ namespace External::Render
 
             int shadow_layers = 12;
             float shadow_offset = 0.0f;
-            float shadow_spread = 10.0f;
+            float shadow_spread = g_styling.apply_scale(10.0f);
+
+            auto mul = [](ImVec4 c, float v, float a)
+                {
+                    return ImColor(
+                        c.x * v,
+                        c.y * v,
+                        c.z * v,
+                        a
+                    );
+                };
+
+            const ImVec4 accent = g_styling.accent();
 
             for (int i = shadow_layers; i > 0; i--)
             {
@@ -199,129 +231,150 @@ namespace External::Render
                 bg_draw_list->AddRectFilled(
                     shadow_min,
                     shadow_max,
-                    IM_COL32(20, 20, 20, (int)(alpha * 255)),
-                    6.0f + thickness * 0.3f
+                    mul(accent, 0.10f, alpha),
+                    g_styling.menu_rounding() + thickness * 0.3f
                 );
             }
 
-            // Left side: custom vertical tabs
-            ImGui::BeginChild("##left", ImVec2(160, 0), true);
+            const float content_width =
+                ImGui::GetWindowContentRegionMax().x - ImGui::GetWindowContentRegionMin().x;
+            const float sidebar_width = ImClamp(
+                content_width * 0.24f,
+                g_styling.apply_scale(130.0f),
+                g_styling.apply_scale(190.0f)
+            );
+
+            ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+            ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.0f);
+            ImGui::BeginChild("##left", ImVec2(sidebar_width, 0), false);
 
             static int category = 0;
             const char* tabs[] = { "Visuals", "Settings" };
-            UI::CustomWidgets::VerticalTabs("##sidebar", tabs, 2, &category);
+            std::string tab_name = "novision.cc";
+            std::string tab_ver = "v26.0.0.0";
+            Widgets::VerticalTabs(tab_name, tab_ver, "##sidebar", tabs, 2, &category);
 
             ImGui::EndChild();
+            ImGui::PopStyleVar();
+            ImGui::PopStyleColor();
 
-            ImGui::SameLine();
+            const ImVec2 sidebar_min = ImGui::GetItemRectMin();
+            const ImVec2 sidebar_max = ImGui::GetItemRectMax();
+            ImGui::GetWindowDrawList()->AddRectFilled(
+                ImVec2(sidebar_max.x + g_styling.apply_scale(4.0f), sidebar_min.y + g_styling.apply_scale(4.0f)),
+                ImVec2(sidebar_max.x + g_styling.apply_scale(5.0f), sidebar_max.y - g_styling.apply_scale(4.0f)),
+                ImGui::ColorConvertFloat4ToU32(ImVec4(accent.x, accent.y, accent.z, 0.18f))
+            );
+
+            ImGui::SameLine(0.0f, g_styling.apply_scale(10.0f));
 
             // Right side: main content with fade
             ImGui::BeginChild("##right", ImVec2(0, 0), true);
 
             if (category != s_lastCategory)
             {
+                s_pageSlideDir = category > s_lastCategory ? 1.0f : -1.0f;
                 s_fadeAnim = 0.0f;
                 s_lastCategory = category;
             }
 
             ImGuiIO& io = ImGui::GetIO();
-            const float fade_speed = 10.0f;
+            const float fade_speed = 13.0f;
             s_fadeAnim += (1.0f - s_fadeAnim) * ImClamp(fade_speed * io.DeltaTime, 0.0f, 1.0f);
-            if (s_fadeAnim > 0.99f)
+            if (s_fadeAnim > 0.999f)
                 s_fadeAnim = 1.0f;
 
-            ImGui::PushStyleVar(ImGuiStyleVar_Alpha, s_fadeAnim);
+            const float eased = ease_out_cubic(s_fadeAnim);
+            const float slide_x = (1.0f - eased) * s_pageSlideDir * g_styling.apply_scale(22.0f);
+            const float slide_y = (1.0f - eased) * g_styling.apply_scale(8.0f);
 
-            switch (category)
             {
-            case 0: DrawVisualsPanel(); break;
-            case 1: DrawSettingsPanel(); break;
-            default: DrawVisualsPanel(); break;
+                const ImVec2 glow_min = ImGui::GetWindowPos();
+                const ImVec2 glow_max = glow_min + ImGui::GetWindowSize();
+                ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImLerp(0.35f, 1.0f, eased) * ImGui::GetStyle().Alpha);
+                Widgets::DrawParallaxBackgroundGlows(glow_min, glow_max, accent);
+                ImGui::PopStyleVar();
             }
 
-            ImGui::PopStyleVar();
+            draw_active_panel(category, eased, slide_x, slide_y);
 
             ImGui::EndChild();
-
             ImGui::End();
-
-            update_visibility();
         }
 
         static void DrawVisualsPanel()
         {
-            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12.0f, 8.0f));
-            ImGui::Indent(4.0f);
-            ImGui::Columns(2, "##visuals-columns", false);
+            Widgets::BeginPanelColumns("##visuals-columns");
 
-            UI::CustomWidgets::BeginSection("General");
-            
-            UI::CustomWidgets::Checkbox(encrypt("Lines"), &External::Config::g_lines_enabled);
-            UI::CustomWidgets::Checkbox(encrypt("Boxes"), &External::Config::g_boxes_enabled);
-            
-            UI::CustomWidgets::EndSection();
+            if (Widgets::BeginSection("General"))
+            {
+                Widgets::Checkbox(encrypt("Lines"), &External::Config::g_lines_enabled);
+                Widgets::Checkbox(encrypt("Boxes"), &External::Config::g_boxes_enabled);
+            }
+            Widgets::EndSection();
 
+            if (Widgets::BeginSection("Tuning"))
+            {
+                Widgets::SliderFloat(encrypt("Snaplines Orgin"),
+                    &External::Config::g_lines_origin, 0, 1);
 
-            UI::CustomWidgets::BeginSection("Tuning");
-            ImGui::Indent(12.0f);
-            
-            UI::CustomWidgets::SliderFloat(encrypt("Snaplines Orgin"),
-                &External::Config::g_lines_origin, 0, 1);
+                Widgets::SliderFloat(encrypt("Snaplines Thickness"),
+                    &External::Config::g_line_thickness, 0, 5);
 
-            UI::CustomWidgets::SliderFloat(encrypt("Snaplines Thickness"),
-                &External::Config::g_line_thickness, 0, 5);
-
-            UI::CustomWidgets::SliderFloat(encrypt("Box Thickness"),
-                &External::Config::g_box_thickness, 0, 5);
-                
-            ImGui::Unindent(12.0f);
-            UI::CustomWidgets::EndSection();
+                Widgets::SliderFloat(encrypt("Box Thickness"),
+                    &External::Config::g_box_thickness, 0, 5);
+            }
+            Widgets::EndSection();
 
             ImGui::NextColumn();
-            ImGui::Unindent(8.0f);
 
-            UI::CustomWidgets::BeginSection("Colors");
-            ImGui::Indent(12.0f);
-            
-            ImGui::ColorEdit4(encrypt("Teammate"), (float*)&External::Config::g_teammate_color,
-                ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoSidePreview);
-            ImGui::ColorEdit4(encrypt("Tank"), (float*)&External::Config::g_tank_color,
-                ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoSidePreview);
-            ImGui::ColorEdit4(encrypt("Plane"), (float*)&External::Config::g_plane_color,
-                ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoSidePreview);
-                
-            ImGui::Unindent(12.0f);
-            UI::CustomWidgets::EndSection();
+            if (Widgets::BeginSection("Colors"))
+            {
+                ImGui::ColorEdit4(encrypt("Teammate"), (float*)&External::Config::g_teammate_color);
+                ImGui::ColorEdit4(encrypt("Tank"), (float*)&External::Config::g_tank_color);
+                ImGui::ColorEdit4(encrypt("Plane"), (float*)&External::Config::g_plane_color);
+            }
+            Widgets::EndSection();
 
-            UI::CustomWidgets::BeginSection("Details");
-            
-            UI::CustomWidgets::Checkbox(encrypt("Usernames"), &External::Config::g_usernames_enabled);
-            UI::CustomWidgets::Checkbox(encrypt("Distance"), &External::Config::g_distance_enabled);
-            
-            UI::CustomWidgets::EndSection();
+            if (Widgets::BeginSection("Details"))
+            {
+                Widgets::Checkbox(encrypt("Usernames"), &External::Config::g_usernames_enabled);
+                Widgets::Checkbox(encrypt("Distance"), &External::Config::g_distance_enabled);
+            }
+            Widgets::EndSection();
 
-            ImGui::EndColumns();
-            ImGui::PopStyleVar();
+            Widgets::EndPanelColumns();
         }
 
         static void DrawSettingsPanel()
         {
-            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(12.0f, 8.0f));
-            ImGui::Indent(4.0f);
-            ImGui::Columns(2, "##settings-columns", false);
+            Widgets::BeginPanelColumns("##settings-columns");
 
-            UI::CustomWidgets::BeginSection("Overlay");
-            
-            UI::CustomWidgets::Checkbox(encrypt("VSync"), &External::Config::g_vsync_enabled);
-            UI::CustomWidgets::Checkbox(encrypt("Capturable"), &External::Config::g_capturable_enabled);
-            
-            UI::CustomWidgets::EndSection();
+            if (Widgets::BeginSection("Overlay"))
+            {
+                Widgets::Checkbox(encrypt("VSync"), &External::Config::g_using_vsync);
+                Widgets::Checkbox(encrypt("Stream Mode"), &External::Config::g_is_streamer_mode);
+            }
+            Widgets::EndSection();
+
+            if (Widgets::BeginSection("Theme"))
+            {
+                Widgets::ColorEdit4(encrypt("Accent Color"), &External::Config::g_menu_accent_color);
+            }
+            Widgets::EndSection();
 
             ImGui::NextColumn();
-            ImGui::Unindent(8.0f);
 
-            ImGui::EndColumns();
-            ImGui::PopStyleVar();
+            if (Widgets::BeginSection("Performance"))
+            {
+                Widgets::Checkbox(encrypt("Console Window"), &External::Config::g_using_console);
+                Widgets::Checkbox(encrypt("Efficiency Mode"), &External::Config::g_using_efficiency_mode);
+            }
+            Widgets::EndSection();
+
+            Widgets::EndPanelColumns();
         }
 	};
+
+    inline c_menu g_menu{};
 }

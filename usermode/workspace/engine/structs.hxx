@@ -41,8 +41,8 @@ namespace External::Engine::Structs
 
 			// Convert NDC → screen space
 			vector2_t<T> screen{};
-			screen.x = (ndc_x * 0.5f + 0.5f) * static_cast<float>(screen_width);
-			screen.y = (0.5f - ndc_y * 0.5f) * static_cast<float>(screen_height);
+			screen.x = (ndc_x * 0.5f + 0.5f) * static_cast<float>(g_screen_width);
+			screen.y = (0.5f - ndc_y * 0.5f) * static_cast<float>(g_screen_height);
 
 			return screen;
 		}

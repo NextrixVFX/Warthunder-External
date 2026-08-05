@@ -35,7 +35,7 @@ namespace External::Runtime
 
 		void tick() override
 		{
-			sleep_short(1);
+			sleep_short(Config::g_using_efficiency_mode ? 4 : 2);
 
 			entities_frame_t frame{};
 

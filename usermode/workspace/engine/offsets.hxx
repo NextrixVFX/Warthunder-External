@@ -29,7 +29,7 @@ namespace offsets
             if (!(iss >> name >> std::hex >> value))
                 continue;
 
-            External::Logger::print(encrypt("Offset: %s: 0x%llX"), name.c_str(), value);
+            External::Logger::print(encrypt("[c_offsets] load: Offset: %s: 0x%llX"), name.c_str(), value);
             values[name] = value;
         }
 

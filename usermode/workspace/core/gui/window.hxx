@@ -1,11 +1,14 @@
 #pragma once
 
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 namespace External::Render
 {
 	class c_window
 	{
 	public:
 		static inline MARGINS m_window_margins = { -1 };
+		static inline HWND m_task_manager = nullptr;
 		static inline HWND m_window = nullptr;
 		static inline HWND m_game_window = nullptr;
 		static inline RECT m_game_rect{ };
@@ -15,9 +18,15 @@ namespace External::Render
 		static inline int m_window_height = 0;
 		static inline int m_render_width = 0;
 		static inline int m_render_height = 0;
-		
 
 	private:
+		static LRESULT CALLBACK wnd_proc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+		{
+			if (ImGui::GetCurrentContext() && ImGui_ImplWin32_WndProcHandler(hwnd, msg, wp, lp))
+				return true;
+			return DefWindowProcA(hwnd, msg, wp, lp);
+		}
+
 		static HWND create_owned_window(RECT size)
 		{
 			static bool class_registered = false;
@@ -25,15 +34,15 @@ namespace External::Render
 			{
 				WNDCLASSEXA wc{};
 				wc.cbSize = sizeof(WNDCLASSEXA);
-				wc.lpfnWndProc = DefWindowProcA;
+				wc.lpfnWndProc = wnd_proc;
 				wc.hInstance = GetModuleHandleA(nullptr);
-				wc.lpszClassName = encrypt("classname");
+				wc.lpszClassName = encrypt("WorkerW");
 				wc.style = CS_HREDRAW | CS_VREDRAW;
 				wc.hCursor = LoadCursor(nullptr, IDC_ARROW);
 
 				if (!RegisterClassExA(&wc))
 				{
-					Logger::print(encrypt("failed to register overlay window class"));
+					Logger::print(encrypt("[c_window] create_owned_window: failed to register overlay window class"));
 					return nullptr;
 				}
 
@@ -41,27 +50,38 @@ namespace External::Render
 			}
 
 			HWND m_window = CreateWindowExA(
-				WS_EX_LAYERED |
-				WS_EX_TRANSPARENT |
-				WS_EX_TOOLWINDOW,
-				encrypt("classname"),
-				encrypt("window"),
-				WS_POPUP,
-				size.left,
-				size.top,
+				WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW,
+				encrypt("WorkerW"), nullptr,
+				WS_POPUP | WS_VISIBLE | WS_CLIPSIBLINGS,
+				size.left, size.top,
 				size.right - size.left,
 				size.bottom - size.top,
-				nullptr,
-				nullptr,
-				GetModuleHandleA(nullptr),
-				nullptr
+				nullptr, nullptr,
+				GetModuleHandleA(nullptr), nullptr
 			);
 
 			if (!m_window)
 			{
-				Logger::print(encrypt("failed to create overlay window"));
+				Logger::print(encrypt("[c_window] create_owned_window: failed to create overlay window"));
 				return nullptr;
 			}
+
+			LONG_PTR ex = GetWindowLongPtr(m_window, GWL_EXSTYLE);
+			SetWindowLongPtrA(m_window, GWL_EXSTYLE, ex | WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE);
+			SetWindowTextA(m_window, encrypt("Taskmgr"));
+
+			MARGINS margins{ -1, -1, -1, -1 };
+			DwmExtendFrameIntoClientArea(m_window, &margins);
+			SetLayeredWindowAttributes(m_window, 0, 255, LWA_ALPHA);
+
+			BOOL use_dark_mode = TRUE;
+			DwmSetWindowAttribute(m_window, DWMWA_USE_IMMERSIVE_DARK_MODE, &use_dark_mode, sizeof(use_dark_mode));
+
+			BOOL disable = FALSE;
+			DwmSetWindowAttribute(m_window, DWMWA_HAS_ICONIC_BITMAP, &disable, sizeof(disable));
+			DwmSetWindowAttribute(m_window, DWMWA_FORCE_ICONIC_REPRESENTATION, &disable, sizeof(disable));
+			DwmSetWindowAttribute(m_window, DWMWA_DISALLOW_PEEK, &disable, sizeof(disable));
+			DwmSetWindowAttribute(m_window, DWMWA_EXCLUDED_FROM_PEEK, &disable, sizeof(disable));
 
 			return m_window;
 		}
@@ -90,90 +110,98 @@ namespace External::Render
 			return 0;
 		}
 
-	public:
-		static bool create_window_binding(const std::string& window_name_1, const std::string& window_name_2)
+		static inline bool protect_overlay_window(HWND hwnd)
 		{
-			m_game_window = ::FindWindowA(nullptr, window_name_1.c_str());
-
-			if (!m_game_window)
-				m_game_window = ::FindWindowA(nullptr, window_name_2.c_str());
-
-			if (!m_game_window)
-			{
-				Logger::print(
-					encrypt("Failed to find game window:\t%s / %s"),
-					window_name_1.c_str(),
-					window_name_2.c_str()
-				);
-
-				return false;
-			}
-
-			RECT rect = get_client_area_and_size(m_game_window);
-			m_window = create_owned_window(rect);
-			if (!m_window)
-			{
-				Logger::print(encrypt("Failed to find IME child window (\"IME\" / \"Default IME\")"));
-				return false;
-			}
-
-			// memory.kernel->windowHandle = m_window;
-			if (!::SetWindowPos(
-				m_window,
-				nullptr,
-				rect.left,
-				rect.top,
-				rect.right - rect.left,
-				rect.bottom - rect.top,
-				SWP_NOZORDER))
-			{
-				Logger::print(encrypt("SetWindowPos failed for IME overlay"));
-				return false;
-			}
-
-			if (!m_window)
-			{
-				Logger::print(encrypt("Overlay window handle is null after binding"));
-				return false;
-			}
-
-			LONG_PTR ex = GetWindowLongPtr(m_window, GWL_EXSTYLE);
-			SetWindowLongPtr(
-				m_window,
-				GWL_EXSTYLE,
-				ex | WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE
-			);
-
-			MARGINS window_margin{ -1 };
-			::DwmExtendFrameIntoClientArea(m_window, &window_margin);
-			::SetLayeredWindowAttributes(m_window, 0, 255, LWA_ALPHA);
-
-			::UpdateWindow(m_window);
-			::ShowWindow(m_window, SW_SHOW);
+			// implement overlay protections
 			return true;
 		}
 
-		static inline void refresh_window()
+	public:
+		static bool create_window_binding(const std::string& window_name)
 		{
-			::SetWindowPos(
+			::SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
+			while (!m_game_window)
+			{
+				m_game_window = Common::find_window(window_name);
+
+				if (!m_game_window)
+					sleep_short(100);
+			}
+			
+			Logger::print(encrypt("[c_window] create_window_binding: Found game window."));
+			
+			// Get the game window's physical client rect in screen coords
+			RECT client_rect{};
+			::GetClientRect(m_game_window, &client_rect);
+
+			POINT origin{ 0, 0 };
+			::ClientToScreen(m_game_window, &origin);
+
+			RECT screen_rect{};
+			screen_rect.left = origin.x;
+			screen_rect.top = origin.y;
+			screen_rect.right = origin.x + (client_rect.right - client_rect.left);
+			screen_rect.bottom = origin.y + (client_rect.bottom - client_rect.top);
+
+			m_window = create_owned_window(screen_rect);
+			if (!m_window)
+			{
+				Logger::print(encrypt("[c_window] create_window_binding: Failed to find overlay window"));
+				return false;
+			}
+
+			if (!SetWindowPos(
 				m_window,
 				nullptr,
-				m_pos_x,
-				m_pos_y,
-				m_render_width > 0 ? m_render_width : screen_width,
-				m_render_height > 0 ? m_render_height : screen_height,
-				0
+				screen_rect.left,
+				screen_rect.top,
+				screen_rect.right - screen_rect.left,
+				screen_rect.bottom - screen_rect.top,
+				SWP_NOZORDER))
+			{
+				Logger::print(encrypt("[c_window] create_window_binding: SetWindowPos failed for IME overlay"));
+				return false;
+			}
+
+			ShowWindow(m_window, SW_SHOW);
+			UpdateWindow(m_window);
+
+			RECT bound_client{};
+			::GetClientRect(m_window, &bound_client);
+			Common::update_screen_metrics(
+				bound_client.right - bound_client.left,
+				bound_client.bottom - bound_client.top
 			);
+
+			RAWINPUTDEVICE rid[2]{};
+			rid[0].usUsagePage = 0x01;
+			rid[0].usUsage = 0x02;
+			rid[0].dwFlags = RIDEV_INPUTSINK;
+			rid[0].hwndTarget = m_window;
+			rid[1].usUsagePage = 0x01;
+			rid[1].usUsage = 0x06;
+			rid[1].dwFlags = RIDEV_INPUTSINK;
+			rid[1].hwndTarget = m_window;
+			RegisterRawInputDevices(rid, 2, sizeof(RAWINPUTDEVICE));
+
+			if (!protect_overlay_window(m_window))
+			{
+				Logger::print(encrypt("[c_window] create_window_binding: Failed to hide overlay window"));
+				return false;
+			}
+
+			return true;
 		}
 
 		static void update_capturability()
 		{
-			if (!c_window::m_window)
+			if (!m_window)
 				return;
 
-			DWORD isExcluded = (Config::g_capturable_enabled) ? WDA_NONE : WDA_EXCLUDEFROMCAPTURE;
-
-			::SetWindowDisplayAffinity(c_window::m_window, isExcluded);
+			SetWindowDisplayAffinity(m_window, Config::g_is_streamer_mode ? WDA_EXCLUDEFROMCAPTURE : WDA_NONE);
 		}
 	};
+
+	inline c_window g_window{};
 }

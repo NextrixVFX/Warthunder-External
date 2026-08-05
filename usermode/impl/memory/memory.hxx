@@ -30,11 +30,6 @@ namespace External::Runtime
 		{
 			return mm::c_usermode::get_base_address(p_proc_handle);
 		}
-#else
-		static uintptr_t get_base_addr(const DWORD p_pid)
-		{
-			return Interface.GetProcessBaseAddress(p_pid);
-		}
 #endif
 
 	public:
@@ -60,12 +55,7 @@ namespace External::Runtime
 			// get base
 			m_application.m_base_address = get_base_addr(m_application.m_handle);
 			is_invalid(m_application.m_base_address);
-#else
-			// get base
-			m_application.m_base_address = get_base_addr(m_application.m_pid);
-			is_invalid(m_application.m_base_address);
 #endif
-
 			Logger::print(encrypt("Attached to:\t%s"), p_name.c_str());
 			Logger::print(encrypt("Found pid:\t%d"), m_application.m_pid);
 			// Logger::print(encrypt("Found handle:\t 0x%llx"), m_application.m_handle);
@@ -90,11 +80,8 @@ namespace External::Runtime
 #ifdef is_usermode_mem
 			T buffer{};
 			if (ReadProcessMemory(m_application.m_handle, reinterpret_cast<LPCVOID>(addr), &buffer, sizeof(T), NULL))
-				return buffer;
-#else
-			return Interface.Read<T>(addr);
+				return buffer;	
 #endif
-
 			return T{};
 		}
 
@@ -105,12 +92,8 @@ namespace External::Runtime
 
 #ifdef is_usermode_mem
 			if (ReadProcessMemory(m_application.m_handle, reinterpret_cast<LPCVOID>(addr), buffer, size, NULL))
-				return true;
-#else
-			if (Interface.Read(addr, buffer, size))
-				return true;
+				return true;	
 #endif
-
 			return false;
 		}
 
@@ -125,12 +108,8 @@ namespace External::Runtime
 
 #ifdef is_usermode_mem
 			if (WriteProcessMemory(m_application.m_handle, reinterpret_cast<LPCVOID>(addr), &value, sizeof(T), NULL))
-				return true;
-#else
-			if (Interface.Write<T>(addr, value))
-				return true;
+				return true;	
 #endif
-
 			return false;
 		}
 	};

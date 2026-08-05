@@ -32,7 +32,7 @@ namespace External::Runtime
 
 		void tick() override
 		{
-			sleep_short(4);
+			sleep_short(Config::g_using_efficiency_mode ? 16 : 8);
 
 			s_engine_frame frame{};
 			uintptr_t base_address = g_memory.m_application.m_base_address;

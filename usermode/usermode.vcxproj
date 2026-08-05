@@ -55,6 +55,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
@@ -72,18 +73,18 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)\build\$(ProjectName)\</OutDir>
-    <IntDir>$(SolutionDir)\build\$(ProjectName)\intermediates\</IntDir>
-    <TargetName>external</TargetName>
+    <OutDir>$(SolutionDir)\build\$(ProjectName)\Release\</OutDir>
+    <IntDir>$(SolutionDir)\intermediates\$(ProjectName)\Release\</IntDir>
+    <TargetName>Edge</TargetName>
     <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</ExternalIncludePath>
-    <IncludePath>.\;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);.\</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)\build\$(ProjectName)\</OutDir>
-    <IntDir>$(SolutionDir)\build\$(ProjectName)\intermediates\</IntDir>
-    <TargetName>external</TargetName>
+    <OutDir>$(SolutionDir)\build\$(ProjectName)\Debug\</OutDir>
+    <IntDir>$(SolutionDir)\intermediates\$(ProjectName)\Debug\</IntDir>
+    <TargetName>Edge</TargetName>
     <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);</ExternalIncludePath>
-    <IncludePath>.\;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);.\</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -116,18 +117,21 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
-      <SDLCheck>true</SDLCheck>
+      <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;$(ProjectDir)include/imgui;$(ProjectDir)include/freetype;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./impl/include;./impl/include/imgui;</AdditionalIncludeDirectories>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <LanguageStandard_C>stdclatest</LanguageStandard_C>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <UACExecutionLevel>AsInvoker</UACExecutionLevel>
-      <AdditionalLibraryDirectories>$(ProjectDir)lib\</AdditionalLibraryDirectories>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
+      <AdditionalLibraryDirectories>./impl/lib/</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -135,38 +139,102 @@
       <WarningLevel>Level3</WarningLevel>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
+      <SDLCheck>false</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;$(ProjectDir)include/imgui;$(ProjectDir)include/freetype;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>./impl/include;./impl/include/imgui;</AdditionalIncludeDirectories>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <LanguageStandard_C>stdclatest</LanguageStandard_C>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <UACExecutionLevel>AsInvoker</UACExecutionLevel>
-      <AdditionalLibraryDirectories>$(ProjectDir)lib\</AdditionalLibraryDirectories>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
+      <AdditionalLibraryDirectories>./impl/lib/</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="include\imgui\backends\imgui_impl_dx11.cpp" />
-    <ClCompile Include="include\imgui\backends\imgui_impl_win32.cpp" />
-    <ClCompile Include="include\imgui\imgui.cpp" />
-    <ClCompile Include="include\imgui\imgui_draw.cpp" />
-    <ClCompile Include="include\imgui\imgui_freetype.cpp" />
-    <ClCompile Include="include\imgui\imgui_tables.cpp" />
-    <ClCompile Include="include\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="include\stb\stb_vorbis.c" />
+    <ClCompile Include="impl\include\imgui\backends\imgui_impl_dx11.cpp" />
+    <ClCompile Include="impl\include\imgui\backends\imgui_impl_win32.cpp" />
+    <ClCompile Include="impl\include\imgui\imgui.cpp" />
+    <ClCompile Include="impl\include\imgui\imgui_draw.cpp" />
+    <ClCompile Include="impl\include\imgui\imgui_tables.cpp" />
+    <ClCompile Include="impl\include\imgui\imgui_widgets.cpp" />
     <ClCompile Include="main.cxx" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="impl\memory\kernelmode\include.hxx" />
-    <ClInclude Include="impl\memory\kernelmode\interface.hxx" />
-    <ClInclude Include="impl\memory\kernelmode\structs.hxx" />
-    <ClInclude Include="impl\memory\usermode\include.hxx" />
+    <ClInclude Include="impl\includes.hxx" />
+    <ClInclude Include="impl\include\DirectXTK\Audio.h" />
+    <ClInclude Include="impl\include\DirectXTK\BufferHelpers.h" />
+    <ClInclude Include="impl\include\DirectXTK\CommonStates.h" />
+    <ClInclude Include="impl\include\DirectXTK\DDSTextureLoader.h" />
+    <ClInclude Include="impl\include\DirectXTK\DirectXHelpers.h" />
+    <ClInclude Include="impl\include\DirectXTK\Effects.h" />
+    <ClInclude Include="impl\include\DirectXTK\GamePad.h" />
+    <ClInclude Include="impl\include\DirectXTK\GeometricPrimitive.h" />
+    <ClInclude Include="impl\include\DirectXTK\GraphicsMemory.h" />
+    <ClInclude Include="impl\include\DirectXTK\Keyboard.h" />
+    <ClInclude Include="impl\include\DirectXTK\Model.h" />
+    <ClInclude Include="impl\include\DirectXTK\Mouse.h" />
+    <ClInclude Include="impl\include\DirectXTK\PostProcess.h" />
+    <ClInclude Include="impl\include\DirectXTK\PrimitiveBatch.h" />
+    <ClInclude Include="impl\include\DirectXTK\ScreenGrab.h" />
+    <ClInclude Include="impl\include\DirectXTK\SimpleMath.h" />
+    <ClInclude Include="impl\include\DirectXTK\SpriteBatch.h" />
+    <ClInclude Include="impl\include\DirectXTK\SpriteFont.h" />
+    <ClInclude Include="impl\include\DirectXTK\VertexTypes.h" />
+    <ClInclude Include="impl\include\DirectXTK\WICTextureLoader.h" />
+    <ClInclude Include="impl\include\DirectXTK\XboxDDSTextureLoader.h" />
+    <ClInclude Include="impl\include\imgui\backends\imgui_impl_dx11.h" />
+    <ClInclude Include="impl\include\imgui\backends\imgui_impl_win32.h" />
+    <ClInclude Include="impl\include\imgui\imconfig.h" />
+    <ClInclude Include="impl\include\imgui\imgui.h" />
+    <ClInclude Include="impl\include\imgui\imgui_internal.h" />
+    <ClInclude Include="impl\include\imgui\imstb_rectpack.h" />
+    <ClInclude Include="impl\include\imgui\imstb_textedit.h" />
+    <ClInclude Include="impl\include\imgui\imstb_truetype.h" />
+    <ClInclude Include="impl\include\rapidjson\allocators.h" />
+    <ClInclude Include="impl\include\rapidjson\document.h" />
+    <ClInclude Include="impl\include\rapidjson\encodedstream.h" />
+    <ClInclude Include="impl\include\rapidjson\encodings.h" />
+    <ClInclude Include="impl\include\rapidjson\error\en.h" />
+    <ClInclude Include="impl\include\rapidjson\error\error.h" />
+    <ClInclude Include="impl\include\rapidjson\filereadstream.h" />
+    <ClInclude Include="impl\include\rapidjson\filewritestream.h" />
+    <ClInclude Include="impl\include\rapidjson\fwd.h" />
+    <ClInclude Include="impl\include\rapidjson\internal\biginteger.h" />
+    <ClInclude Include="impl\include\rapidjson\internal\diyfp.h" />
+    <ClInclude Include="impl\include\rapidjson\internal\dtoa.h" />
+    <ClInclude Include="impl\include\rapidjson\internal\ieee754.h" />
+    <ClInclude Include="impl\include\rapidjson\internal\itoa.h" />
+    <ClInclude Include="impl\include\rapidjson\internal\meta.h" />
+    <ClInclude Include="impl\include\rapidjson\internal\pow10.h" />
+    <ClInclude Include="impl\include\rapidjson\internal\regex.h" />
+    <ClInclude Include="impl\include\rapidjson\internal\stack.h" />
+    <ClInclude Include="impl\include\rapidjson\internal\strfunc.h" />
+    <ClInclude Include="impl\include\rapidjson\internal\strtod.h" />
+    <ClInclude Include="impl\include\rapidjson\internal\swap.h" />
+    <ClInclude Include="impl\include\rapidjson\istreamwrapper.h" />
+    <ClInclude Include="impl\include\rapidjson\memorybuffer.h" />
+    <ClInclude Include="impl\include\rapidjson\memorystream.h" />
+    <ClInclude Include="impl\include\rapidjson\msinttypes\inttypes.h" />
+    <ClInclude Include="impl\include\rapidjson\msinttypes\stdint.h" />
+    <ClInclude Include="impl\include\rapidjson\ostreamwrapper.h" />
+    <ClInclude Include="impl\include\rapidjson\pointer.h" />
+    <ClInclude Include="impl\include\rapidjson\prettywriter.h" />
+    <ClInclude Include="impl\include\rapidjson\rapidjson.h" />
+    <ClInclude Include="impl\include\rapidjson\reader.h" />
+    <ClInclude Include="impl\include\rapidjson\schema.h" />
+    <ClInclude Include="impl\include\rapidjson\stream.h" />
+    <ClInclude Include="impl\include\rapidjson\stringbuffer.h" />
+    <ClInclude Include="impl\include\rapidjson\writer.h" />
+    <ClInclude Include="impl\include\SKCrypter\skcrypter.hpp" />
     <ClInclude Include="impl\includes.h" />
+    <ClInclude Include="impl\memory\usermode\include.hxx" />
     <ClInclude Include="include\DirectXTK\Audio.h" />
     <ClInclude Include="include\DirectXTK\BufferHelpers.h" />
     <ClInclude Include="include\DirectXTK\CommonStates.h" />
@@ -309,10 +377,12 @@
     <ClInclude Include="include\stb\stb_tilemap_editor.h" />
     <ClInclude Include="include\stb\stb_truetype.h" />
     <ClInclude Include="include\stb\stb_voxel_render.h" />
+    <ClInclude Include="workspace\core\gui\deps\shapes.hxx" />
+    <ClInclude Include="workspace\core\gui\deps\styling.hxx" />
+    <ClInclude Include="workspace\core\gui\deps\utility.hxx" />
     <ClInclude Include="workspace\core\gui\deps\widgets.hxx" />
     <ClInclude Include="workspace\core\gui\menu.hxx" />
     <ClInclude Include="workspace\core\gui\render.hxx" />
-    <ClInclude Include="workspace\core\gui\shapes.hxx" />
     <ClInclude Include="workspace\core\gui\window.hxx" />
     <ClInclude Include="workspace\core\runtime\caches\camera.hxx" />
     <ClInclude Include="workspace\core\runtime\caches\global.hxx" />
@@ -320,7 +390,10 @@
     <ClInclude Include="workspace\core\runtime\caches\engine.hxx" />
     <ClInclude Include="workspace\core\runtime\caches\entities.hxx" />
     <ClInclude Include="impl\memory\memory.hxx" />
+    <ClInclude Include="workspace\engine\enums.hxx" />
     <ClInclude Include="workspace\engine\structs.hxx" />
+    <ClInclude Include="workspace\resources\resource.h" />
+    <ClInclude Include="workspace\utility\assets.hxx" />
     <ClInclude Include="workspace\utility\config.hxx" />
     <ClInclude Include="workspace\core\features\registry.hxx" />
     <ClInclude Include="workspace\core\features\visual\esp.hxx" />
@@ -329,14 +402,12 @@
     <ClInclude Include="workspace\engine\sdk.hxx" />
     <ClInclude Include="workspace\utility\common.hxx" />
     <ClInclude Include="workspace\utility\logger.hxx" />
-    <ClInclude Include="workspace\utility\math.hxx" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="impl\include\DirectXTK\SimpleMath.inl" />
     <None Include="include\DirectXTK\SimpleMath.inl" />
-  </ItemGroup>
-  <ItemGroup>
-    <Library Include="lib\DirectXTK\DirectXTK.lib" />
-    <Library Include="lib\freetype\freetype.lib" />
+    <None Include="workspace\resources\driver.sys" />
+    <None Include="workspace\resources\Resource.aps" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="assets\offsets.txt" />
@@ -344,7 +415,14 @@
   <ItemGroup>
     <Font Include="assets\Poppins.ttf" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="workspace\resources\icon.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="workspace\resources\Resource.rc" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets" />
   </ImportGroup>
 </Project>

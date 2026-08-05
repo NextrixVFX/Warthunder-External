@@ -22,8 +22,6 @@ namespace External::Features::Visual
 
 		void on_render() override
 		{
-			ImFont* font = Render::c_render::m_fonts.font_16;
-			
 			c_camera_cache::get(m_camera_cache);
 			auto& cam_data = m_camera_cache->m_data.get().m_camera_data;
 
@@ -58,7 +56,7 @@ namespace External::Features::Visual
 						if (p1.x == -1 || p2.x == -1)
 							continue;
 
-						Render::inst_shapes->Line(
+						Render::g_shapes.Line(
 							p1.x, p1.y,
 							p2.x, p2.y,
 							entity_color,
@@ -75,8 +73,8 @@ namespace External::Features::Visual
 
 				if (Config::g_lines_enabled && entity.m_team_num != global::g_local.m_local_player.m_team_idx)
 				{
-					Render::inst_shapes->Line(
-						screen_center.x, screen_height * Config::g_lines_origin,
+					Render::g_shapes.Line(
+						g_screen_center.x, g_screen_height * Config::g_lines_origin,
 						base_pos.x, base_pos.y + offset,
 						entity_color,
 						Config::g_line_thickness
@@ -86,7 +84,7 @@ namespace External::Features::Visual
 				if (Config::g_usernames_enabled)
 				{
 					auto color = ImColor{ 255,255,255,255 };
-					Render::inst_shapes->Text({ base_pos.x, base_pos.y + offset }, color, 1, entity.m_username, font);
+					Render::g_shapes.Text({ base_pos.x, base_pos.y + offset }, color, 1, entity.m_username, Render::g_styling.m_fonts.esp_regular);
 				}
 				
 				if (Config::g_distance_enabled)
@@ -95,8 +93,8 @@ namespace External::Features::Visual
 					const float normalized_dist = std::clamp<float>(1.0f - (dist_meters / 600.0f), 0.0f, 1.0f);
 					std::string dist_str = std::format("{:.1f}m", dist_meters);
 					ImColor col = ImLerp(ImColor(0, 255, 0, 255).Value, ImColor(255, 0, 0, 255).Value, normalized_dist);
-					Render::inst_shapes->Text(
-						{ base_pos.x, base_pos.y + (offset + Config::g_usernames_enabled ? 32.f : 0.f) }, col, 1, dist_str, font);
+					Render::g_shapes.Text(
+						{ base_pos.x, base_pos.y + (offset + Config::g_usernames_enabled ? 32.f : 0.f) }, col, 1, dist_str, Render::g_styling.m_fonts.esp_regular);
 				}
 			}
 		}

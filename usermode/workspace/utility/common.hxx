@@ -2,13 +2,87 @@
 
 namespace External::Common
 {
-	inline static int screen_width = GetSystemMetrics(SM_CXSCREEN);
-	inline static int screen_height = GetSystemMetrics(SM_CYSCREEN);
+	inline static bool g_console_initialized = false;
 
-	inline static Primitives::vector2_t<float> screen_center = {
-		screen_width * .5f,
-		screen_height * .5f,
-	};
+	inline static int g_screen_width = 0;
+	inline static int g_screen_height = 0;
+
+	inline static Primitives::vector2_t<float> g_screen_size{};
+	inline static Primitives::vector2_t<float> g_screen_center{};
+	inline static float g_ui_scale = 1.f;
+
+	inline void toggle_console(bool show)
+	{
+		if (show)
+		{
+			if (!g_console_initialized)
+			{
+				AllocConsole();
+
+				FILE* fp;
+
+				freopen_s(&fp, "CONOUT$", "w", stdout);
+				freopen_s(&fp, "CONOUT$", "w", stderr);
+				freopen_s(&fp, "CONIN$", "r", stdin);
+
+				std::cout.clear();
+				std::cerr.clear();
+				std::cin.clear();
+
+				g_console_initialized = true;
+			}
+
+			ShowWindow(GetConsoleWindow(), SW_SHOW);
+		}
+		else
+		{
+			HWND console = GetConsoleWindow();
+
+			if (console)
+				ShowWindow(console, SW_HIDE);
+		}
+	}
+
+	inline static HWND find_window(const std::string& text)
+	{
+		struct Data
+		{
+			const std::string* search;
+			HWND result = nullptr;
+		} data{ &text };
+
+		EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL
+			{
+				auto* data = reinterpret_cast<Data*>(lParam);
+
+				if (!IsWindowVisible(hwnd))
+					return TRUE;
+
+				char title[512]{};
+				GetWindowTextA(hwnd, title, sizeof(title));
+
+				if (std::string(title).find(*data->search) != std::string::npos)
+				{
+					data->result = hwnd;
+					return FALSE;
+				}
+
+				return TRUE;
+			}, reinterpret_cast<LPARAM>(&data));
+
+		return data.result;
+	}
+
+	inline static void update_screen_metrics(int width, int height)
+	{
+		if (width <= 0 || height <= 0)
+			return;
+
+		g_screen_width = width;
+		g_screen_height = height;
+		g_screen_size = { static_cast<float>(width), static_cast<float>(height) };
+		g_screen_center = g_screen_size * 0.5f;
+	}
 
 	inline static RECT get_client_area_and_size(HWND hwnd)
 	{
@@ -34,6 +108,23 @@ namespace External::Common
 		return rect;
 	}
 
+	inline std::string random_string(size_t length)
+	{
+		const std::string chars = encrypt("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
+
+		std::random_device rd;
+		std::mt19937 gen(rd());
+		std::uniform_int_distribution<> dist(0, chars.size() - 1);
+
+		std::string result;
+		result.reserve(length);
+
+		for (size_t i = 0; i < length; i++)
+			result += chars[dist(gen)];
+
+		return result;
+	}
+
 	inline void sleep_short(float milliseconds)
 	{
 		static bool once = true;
@@ -48,7 +139,7 @@ namespace External::Common
 		NtDelayExecution(false, &interval);
 	}
 
-	struct s_framerate_counter
+	struct framerate_counter_t
 	{
 		std::atomic<float> m_fr{ 0.0f };
 
@@ -79,7 +170,7 @@ namespace External::Common
 		using buffer = T;
 		std::array<buffer, 2> m_buffers;
 		std::atomic<int> m_front_index{ 0 };
-		
+
 	public:
 		c_double_buffer()
 		{
@@ -128,6 +219,5 @@ namespace External::Common
 			back = std::move(data);
 			end_write();
 		}
-
 	};
 }

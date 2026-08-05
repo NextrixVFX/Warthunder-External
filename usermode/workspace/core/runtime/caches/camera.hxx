@@ -20,7 +20,7 @@ namespace External::Runtime
 
 		void tick() override
 		{
-			sleep_short(1);
+			sleep_short(Config::g_using_efficiency_mode ? 2 : 1);
 
 			camera_frame_t frame{};
 			uintptr_t base_address = g_memory.m_application.m_base_address;

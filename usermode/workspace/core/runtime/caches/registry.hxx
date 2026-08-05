@@ -13,7 +13,7 @@ namespace External::Runtime
 	class c_cache
 	{
 	public:
-		Common::s_framerate_counter m_fr_counter{};
+		Common::framerate_counter_t m_fr_counter{};
 		CACHE_ID m_identifier = CACHE_ID::none;
 		bool m_running = false;
 		
