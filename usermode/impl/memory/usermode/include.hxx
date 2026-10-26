@@ -41,16 +41,13 @@ namespace mm
 
 		static HANDLE get_process_handle(DWORD pid)
 		{
-			static HANDLE get_process_handle(DWORD pid)
-			{
-				constexpr DWORD access =
-					PROCESS_QUERY_LIMITED_INFORMATION |
-					PROCESS_VM_READ |
-					PROCESS_VM_WRITE |
-					PROCESS_VM_OPERATION;
+			constexpr DWORD access =
+				PROCESS_QUERY_LIMITED_INFORMATION |
+				PROCESS_VM_READ |
+				PROCESS_VM_WRITE |
+				PROCESS_VM_OPERATION;
 
-				return OpenProcess(access, FALSE, pid);
-			}
+			return OpenProcess(access, FALSE, pid);
 		}
 
 		static uintptr_t get_base_address(HANDLE process)
