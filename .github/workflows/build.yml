@@ -1,0 +1,74 @@
+name: Build Warthunder External (usermode)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'usermode/**'
+      - '.github/workflows/build.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-2025
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v3
+        with:
+          msbuild-architecture: x64
+
+      - name: Validate repository contents
+        shell: pwsh
+        run: |
+          $required = @(
+            'usermode\usermode.vcxproj',
+            'usermode\main.cxx',
+            'usermode\assets\offsets.txt',
+            'usermode\impl\lib\DirectXTK\Release\DirectXTK.lib'
+          )
+          foreach ($path in $required) {
+            if (-not (Test-Path -LiteralPath $path)) {
+              throw "Missing required file: $path"
+            }
+          }
+          & msbuild -version
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build usermode (Release x64)
+        shell: pwsh
+        run: |
+          # Build the .vcxproj directly: the .slnx references a missing hypervisor project.
+          # The project relies on SolutionDir to select build output directories.
+          $solutionDir = "$env:GITHUB_WORKSPACE\"
+          & msbuild '.\usermode\usermode.vcxproj' /t:Rebuild /m `
+            /p:Configuration=Release /p:Platform=x64 `
+            "/p:SolutionDir=$solutionDir" /v:minimal
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Package executable and runtime assets
+        shell: pwsh
+        run: |
+          $exe = 'build\usermode\Release\Edge.exe'
+          if (-not (Test-Path -LiteralPath $exe)) {
+            throw "Expected output not found: $exe"
+          }
+          New-Item -ItemType Directory -Path 'package' -Force | Out-Null
+          Copy-Item -LiteralPath $exe -Destination 'package\Edge.exe'
+          Copy-Item -LiteralPath 'usermode\assets' -Destination 'package\assets' -Recurse
+          Get-FileHash -Algorithm SHA256 'package\Edge.exe' | Format-List
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Warthunder-External-usermode-Release-x64
+          path: package/
+          if-no-files-found: error
+          retention-days: 7
