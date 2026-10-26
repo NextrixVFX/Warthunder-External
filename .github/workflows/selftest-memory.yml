@@ -1,0 +1,52 @@
+name: Isolated Win32 memory self-test
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'tools/memory-selftest.cpp'
+      - '.github/workflows/selftest-memory.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  memory-selftest:
+    runs-on: windows-2025
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compile diagnostic (Windows x64)
+        shell: pwsh
+        run: |
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+          $vs = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw 'Visual Studio C++ build tools not found' }
+          $vcvars = Join-Path $vs 'VC\Auxiliary\Build\vcvars64.bat'
+          if (-not (Test-Path -LiteralPath $vcvars)) { throw "Missing vcvars64.bat: $vcvars" }
+          $command = 'call "' + $vcvars + '" >nul && cl.exe /nologo /W4 /EHsc /std:c++17 /utf-8 /Fe:memory-selftest.exe tools\memory-selftest.cpp'
+          & $env:ComSpec /D /S /C $command 2>&1 | Tee-Object -FilePath selftest-build.log
+          $code = $LASTEXITCODE
+          "compile_exit_code=$code" | Add-Content selftest-build.log
+          if ($code -ne 0) { exit $code }
+
+      - name: Probe self-owned child (never touches a game)
+        shell: pwsh
+        run: |
+          & .\memory-selftest.exe 2>&1 | Tee-Object -FilePath selftest-run.log
+          $code = $LASTEXITCODE
+          "run_exit_code=$code" | Add-Content selftest-run.log
+          if ($code -ne 0) { exit $code }
+
+      - name: Upload diagnostics even if a step failed
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: isolated-memory-selftest-logs
+          path: |
+            selftest-build.log
+            selftest-run.log
+          if-no-files-found: warn
+          retention-days: 7
